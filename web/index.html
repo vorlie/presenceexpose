@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presence WebSocket Tester</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Presence WebSocket Tester</h1>
+
+    <div class="controls">
+        <label for="ws-url">WebSocket URL:</label>
+        <input type="text" id="ws-url" value="ws://localhost:9000/ws">
+        <button id="connect-btn">Connect</button>
+        <span id="status-indicator" class="disconnected"></span>
+        <span id="connection-status">Disconnected</span>
+    </div>
+
+    <div class="controls" id="subscribe-controls" style="display: none;">
+        <label for="user-ids">User IDs (comma-separated):</label>
+        <input type="text" id="user-ids" placeholder="e.g., 614807913302851594">
+        <button id="subscribe-btn">Subscribe</button>
+    </div>
+
+    <hr>
+
+    <h2>Live Presence Data</h2>
+    <div id="presence-display">
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

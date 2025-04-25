@@ -1,0 +1,177 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1,
+h2 {
+    color: #333;
+    text-align: center;
+}
+
+.controls {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    flex-grow: 1;
+    min-width: 200px;
+}
+
+button {
+    padding: 8px 15px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+#connect-btn.disconnect {
+    background-color: #d9534f;
+}
+
+#connect-btn.disconnect:hover {
+    background-color: #c9302c;
+}
+
+
+#status-indicator {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+#status-indicator.disconnected {
+    background-color: #d9534f;
+}
+
+#status-indicator.connecting {
+    background-color: #f0ad4e;
+}
+
+#status-indicator.connected {
+    background-color: #5cb85c;
+}
+
+#status-indicator.error {
+    background-color: #333;
+}
+
+#connection-status {
+    font-style: italic;
+    color: #555;
+    vertical-align: middle;
+}
+
+
+#presence-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.presence-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.presence-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    word-break: break-all;
+}
+
+.presence-card h3 img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #eee;
+}
+
+
+.status {
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.status.online {
+    color: #5cb85c;
+}
+
+.status.idle {
+    color: #f0ad4e;
+}
+
+.status.dnd {
+    color: #d9534f;
+}
+
+.status.offline {
+    color: #777;
+}
+
+.activities-list,
+.spotify-info {
+    margin-top: 10px;
+    padding-left: 0;
+    list-style: none;
+}
+
+.activities-list li {
+    border-bottom: 1px dashed #eee;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.activities-list li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.spotify-info {
+    background-color: #1DB954;
+    /* Spotify green */
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+}
+
+.spotify-info strong {
+    display: block;
+    margin-bottom: 5px;
+}
