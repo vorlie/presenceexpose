@@ -1,5 +1,6 @@
 import discord
 import fastapi
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import asyncio
 import os
@@ -8,7 +9,7 @@ import logging
 import websockets  # For exceptions
 from dotenv import load_dotenv
 from fastapi import WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from typing import Dict, Any, Optional, Set
 
 load_dotenv()  # Load environment variables from .env file
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 HOST = os.getenv("HOST", "0.0.0.0")  # Listen on all network interfaces by default
 PORT = int(os.getenv("PORT", "5173"))  # Port for the web server
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEB_DIR = os.path.join(BASE_DIR, "web")
 
 if not DISCORD_TOKEN:
     raise ValueError("DISCORD_TOKEN not found in environment variables or .env file")
@@ -363,6 +366,12 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
 
 # --- FastAPI Endpoints ---
 
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root_html():
+    logger.info("Serving index.html")
+    return FileResponse(os.path.join(WEB_DIR, "index.html"))
 
 @app.get("/api/v1/users/{user_id_str}")
 async def get_user_presence(user_id_str: str):
@@ -638,7 +647,7 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 await websocket.close(
                     code=1011
-                )  # Internal Server Error or appropriate code
+                )  # Internal Server Error / appropriate code
             except Exception:
                 pass  # Ignore errors during close, already handling exit
         logger.info(

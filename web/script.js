@@ -8,14 +8,16 @@ const subscribeBtn = document.getElementById("subscribe-btn");
 const presenceDisplay = document.getElementById("presence-display");
 
 let websocket = null;
-let heartbeatInterval = null;
-let heartbeatTimer = null;
+// --- Heartbeat variables ---
+let heartbeatIntervalId = null;
+let serverHeartbeatIntervalMs = null;
+// -------------------------
 
 // --- WebSocket OP Codes ---
 const OP_EVENT = 0;
 const OP_HELLO = 1;
-const OP_INITIALIZE = 2; // Subscribe
-const OP_HEARTBEAT = 3;
+const OP_INITIALIZE = 2; // Client sends this to subscribe
+const OP_HEARTBEAT = 3; // Client sends this as ACK or keepalive
 
 // --- Connection Handling ---
 
@@ -51,7 +53,7 @@ function connectWebSocket() {
     updateStatus("Connected", "connected");
     connectBtn.textContent = "Disconnect";
     connectBtn.classList.add("disconnect");
-    subscribeControls.style.display = "flex"; 
+    subscribeControls.style.display = "flex";
     connectBtn.disabled = false;
   };
 
@@ -65,10 +67,15 @@ function connectWebSocket() {
           const interval = message.d?.heartbeat_interval;
           if (interval) {
             console.log(`Received HELLO, heartbeat interval: ${interval}ms`);
+            serverHeartbeatIntervalMs = interval;
+            // --- Start sending heartbeats periodically ---
+            startHeartbeat();
+            // -----------------------------------------
+          } else {
+            console.warn("HELLO message received without heartbeat_interval.");
           }
           break;
         case OP_EVENT:
-          // Presence update or initial state
           if (message.t === "INIT_STATE" || message.t === "PRESENCE_UPDATE") {
             if (
               message.d &&
@@ -96,6 +103,9 @@ function connectWebSocket() {
   websocket.onerror = (error) => {
     console.error("WebSocket Error:", error);
     updateStatus("Error", "error");
+    // --- Stop heartbeat on error too ---
+    stopHeartbeat();
+    // -----------------------------------
     connectBtn.disabled = false;
     wsUrlInput.disabled = false;
   };
@@ -109,11 +119,17 @@ function connectWebSocket() {
     websocket = null;
     wsUrlInput.disabled = false;
     connectBtn.disabled = false;
-    presenceDisplay.innerHTML = '<p>Connection closed. Data might be stale.</p>';
+    // --- Stop heartbeat on close ---
+    stopHeartbeat();
+    serverHeartbeatIntervalMs = null;
+    // -----------------------------
+    // presenceDisplay.innerHTML = '<p>Connection closed. Data might be stale.</p>';
   };
 }
 
 function disconnectWebSocket() {
+  stopHeartbeat();
+  // ---------------------------------------
   if (websocket && websocket.readyState === WebSocket.OPEN) {
     console.log("Closing WebSocket connection...");
     websocket.close(1000, "Client initiated disconnect");
@@ -142,34 +158,27 @@ function subscribeToUsers() {
     alert("WebSocket is not connected.");
     return;
   }
-
   const idsString = userIdsInput.value.trim();
   if (!idsString) {
     alert("Please enter User IDs to subscribe to.");
     return;
   }
-
   const userIds = idsString
     .split(",")
     .map((id) => id.trim())
-    .filter((id) => /^\d+$/.test(id)); 
-
+    .filter((id) => /^\d+$/.test(id));
   if (userIds.length === 0) {
     alert("No valid numeric User IDs found.");
     return;
   }
-
   console.log(`Subscribing to User IDs: ${userIds.join(", ")}`);
-
   const message = {
     op: OP_INITIALIZE,
     d: {
       subscribe_to_ids: userIds,
     },
   };
-
   websocket.send(JSON.stringify(message));
-
   presenceDisplay.innerHTML = "";
   userIds.forEach((id) => {
     updatePresenceDisplay(id, null);
@@ -180,39 +189,33 @@ function subscribeToUsers() {
 
 function updatePresenceDisplay(userId, data) {
   let card = document.getElementById(`user-${userId}`);
-
   if (!card) {
     card = document.createElement("div");
     card.classList.add("presence-card");
     card.id = `user-${userId}`;
     presenceDisplay.appendChild(card);
   }
-
   if (!data) {
     card.innerHTML = `<h3>User ID: ${userId}</h3><p><i>Waiting for data...</i></p>`;
     return;
   }
-
   const user = data.discord_user;
   const avatarUrl =
     user.avatar || "https://cdn.discordapp.com/embed/avatars/0.png";
-
   let activitiesHtml = "<p>No activities.</p>";
   if (data.activities && data.activities.length > 0) {
     activitiesHtml = '<ul class="activities-list">';
     data.activities.forEach((act) => {
       if (act.name === "Spotify" && data.spotify) return;
-
-      activitiesHtml += `<li><strong>${
+      activitiesHtml += `<li><strong>${escapeHtml(
         act.name || "Unknown Activity"
-      }</strong>`;
+      )}</strong>`;
       if (act.details) activitiesHtml += `<br/>${escapeHtml(act.details)}`;
       if (act.state) activitiesHtml += `<br/><em>${escapeHtml(act.state)}</em>`;
       activitiesHtml += "</li>";
     });
     activitiesHtml += "</ul>";
   }
-
   let spotifyHtml = "";
   if (data.spotify) {
     spotifyHtml = `
@@ -224,7 +227,6 @@ function updatePresenceDisplay(userId, data) {
             </div>
         `;
   }
-
   card.innerHTML = `
         <h3>
             <img src="${escapeHtml(
@@ -256,8 +258,40 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-// --- Event Listeners ---
+// --- Heartbeat Functions ---
+function startHeartbeat() {
+  stopHeartbeat();
+  if (!serverHeartbeatIntervalMs || serverHeartbeatIntervalMs <= 0) {
+    console.warn(
+      "Invalid heartbeat interval received from server. Cannot start heartbeat."
+    );
+    return;
+  }
 
+  console.log(
+    `Starting client heartbeat every ${serverHeartbeatIntervalMs}ms.`
+  );
+  heartbeatIntervalId = setInterval(() => {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      console.debug("Sending heartbeat (OP 3)");
+      websocket.send(JSON.stringify({ op: OP_HEARTBEAT }));
+    } else {
+      console.warn("WebSocket not open, stopping heartbeat.");
+      stopHeartbeat();
+    }
+  }, serverHeartbeatIntervalMs);
+}
+
+function stopHeartbeat() {
+  if (heartbeatIntervalId) {
+    console.log("Stopping client heartbeat.");
+    clearInterval(heartbeatIntervalId);
+    heartbeatIntervalId = null;
+  }
+}
+// -------------------------
+
+// --- Event Listeners ---
 connectBtn.addEventListener("click", () => {
   if (
     !websocket ||
@@ -269,7 +303,6 @@ connectBtn.addEventListener("click", () => {
     disconnectWebSocket();
   }
 });
-
 subscribeBtn.addEventListener("click", subscribeToUsers);
 
 // --- Initial State ---

@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Presence WebSocket Tester</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <h1>Presence WebSocket Tester</h1>
 
     <div class="controls">
         <label for="ws-url">WebSocket URL:</label>
-        <input type="text" id="ws-url" value="ws://localhost:9000/ws">
+        <input type="text" id="ws-url" value="wss://dev.vorlie.pl/ws">
         <button id="connect-btn">Connect</button>
         <span id="status-indicator" class="disconnected"></span>
         <span id="connection-status">Disconnected</span>
@@ -29,6 +29,6 @@
     <div id="presence-display">
         </div>
 
-    <script src="script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
